@@ -217,7 +217,7 @@ Payload (in CBOR diagnostic notation)
 
 18([                            / COSE Sign1         /
   h'a1013822',                  / Protected Header   /
-  {'request_id': '0123abcd'},   / Unprotected Header /
+  {},                           / Unprotected Header /
   null,                         / Detached Payload   /
   h'269cd68f4211dffc...0dcb29c' / Signature          /
 ])
@@ -228,8 +228,6 @@ The Registration Policy for the Transparency Service MUST be applied to the payl
 If the `payload` is detached, the Transparency Service depends on the authentication context of the client in the Registration Policy.
 If the `payload` is attached, the Transparency Service depends on both the authentication context of the client (if present), and the verification of the Signed Statement in the Registration Policy.
 The details of Registration Policy are out of scope for this document.
-
-The `Unprotected Header` may contain a `request_id` which, if provided, is used for querying long running registrations later.
 
 If registration succeeds the following identifier MAY be used to refer to the Signed Statement that was accepted:
 
@@ -258,7 +256,7 @@ Payload (in CBOR diagnostic notation)
 
 18([                            / COSE Sign1         /
   h'a1013822',                  / Protected Header   /
-  {"request_id": "0123abcd"},   / Unprotected Header /
+  {},   / Unprotected Header /
   null,                         / Detached Payload   /
   h'269cd68f4211dffc...0dcb29c' / Signature          /
 ])
@@ -278,15 +276,15 @@ Content-Type: application/json
 Retry-After: <seconds>
 
 {
-  "request_id": "0123abcd",
+  "registration_id": "0123abcd",
 }
 
 ~~~
 
 The response contains a reference to the running operation which will eventually be available for the Signed Statement.
 
-If the client supplied a `request_id` then the Transparency Service MUST return the same request_id in the response.
-If the client did not supply a `request_id` then the Transparency Service MUST return a locally unique request_id which can be used in subsequent calls to the Check Registration endpoint.
+The Transparency Service MUST return a locally unique registration_id which can be used in subsequent calls to the Check Registration endpoint.
+A Transparency Service MAY assign different registration_id values to separate registrations of the same claim.
 
 If 202 is returned, then clients should wait until Registration succeeded or failed by polling the Check Operation endpoint using the identifier returned in the response.
 
@@ -339,6 +337,17 @@ One of the following errors:
 }
 ~~~
 
+#### Status 500 - Registration failed
+
+~~~
+{
+  "type": "urn:ietf:params:scitt:error\
+:lro:registration-failed",
+  "detail": \
+"The registration of the claim failed"
+}
+~~~
+
 ### Check Registration
 
 Authentication MAY be implemented for this endpoint.
@@ -374,7 +383,7 @@ Payload (in CBOR diagnostic notation)
 
 18([                            / COSE Sign1         /
   h'a1013822',                  / Protected Header   /
-  {"request_id": "0123abcd"},   / Unprotected Header /
+  {},   / Unprotected Header /
   null,                         / Detached Payload   /
   h'269cd68f4211dffc...0dcb29c' / Signature          /
 ])
@@ -394,13 +403,29 @@ HTTP/1.1 202 Accepted
 
 Location: https://transparency.example/operations/0123abcd
 
+Content-Type: application/json
+
 Retry-After: <seconds>
 
+{
+  "registration_id": "0123abcd",
+}
 ~~~
 
 The response contains a reference to the running operation which will eventually be available for the Signed Statement.
 
 If 202 is returned, then clients should wait until Registration succeeded or failed by polling the Check Operation endpoint using the identifier returned in the response.
+
+#### Status 500 - Registration failure
+
+~~~
+{
+  "type": "urn:ietf:params:scitt:error\
+:lro:registration-failed",
+  "detail": \
+"The registration of the claim failed"
+}
+~~~
 
 #### Status 404 - Operation not found
 
